@@ -2,6 +2,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 import pandas as pd
 
 
+
 class BaseAtomicDataType(object):
     __metaclass__ = ABCMeta
 
@@ -25,7 +26,7 @@ class BaseAtomicDataType(object):
 
 
     def load_hdf(self, hdf_store):
-        self._value = self.hdf_store[self.hdf_name]
+        self._value = hdf_store[self.hdf_name]
 
     @property
     def value(self):
