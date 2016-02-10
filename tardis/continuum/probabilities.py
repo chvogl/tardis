@@ -101,6 +101,15 @@ class TransitionProbabilities(BaseTransitionProbabilities):
 
         return transition_probabilities_dict
 
+    def _get_block_references(self, probabilities):
+        block_references_series = probabilities[0].groupby(level=0).count().cumsum()
+        # TODO: Check if this works after the bug fix
+        no_of_levels = self.input.atom_data.levels.shape[0]
+        block_references = np.zeros(no_of_levels + 1, dtype=np.int64)
+        # Necessary because metastable levels do not have transition probabilities
+        block_references[block_references_series.index + 1] = block_references_series.values
+        return block_references
+
 
 class RecombinationTransitionProbabilities(BaseTransitionProbabilities):
     def __init__(self, input_data, **kwargs):
@@ -158,3 +167,8 @@ class RecombinationTransitionProbabilities(BaseTransitionProbabilities):
         deact_prob.insert(1, 'continuum_edge_idx', continuum_edge_idx)
         deact_prob.insert(2, 'transition_type', transition_type)
         return deact_prob
+
+    def _get_block_references(self, probabilities):
+        block_references = probabilities[0].groupby(level=0).count().cumsum().values
+        block_references = np.hstack([[0], block_references])
+        return block_references

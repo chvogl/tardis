@@ -5,7 +5,10 @@ class ContinuumInputData(object):
     """
     The common input data object for all continuum calculations.
     """
-    def __init__(self, atom_data, plasma_array, ws, radiative_transition_probabilities, estimators):
+
+    def __init__(self, atom_data, plasma_array, ws, radiative_transition_probabilities, estimators,
+                 selected_continuum_species=[1]):
+        self.selected_continuum_species = selected_continuum_species
         # Plasma quantities
         self.electron_densities = plasma_array.electron_densities.values
         self.t_electrons = plasma_array.t_electrons
@@ -22,7 +25,7 @@ class ContinuumInputData(object):
 
         # Atom data
         self.atom_data = atom_data
-        self.lines = atom_data.lines
+        self.lines = atom_data.lines[atom_data.lines['atomic_number'].isin(selected_continuum_species)]
         self.levels = atom_data.levels
         self.ionization_energies = atom_data.ionization_data
         self.photoionization_data = atom_data.continuum_data.photoionization_data
@@ -31,7 +34,7 @@ class ContinuumInputData(object):
         self.macro_atom_references = atom_data.macro_atom_references
         self.macro_atom_references_by_idx = atom_data.macro_atom_references.reset_index().set_index('references_idx')
         self.macro_atom_data = atom_data.macro_atom_data
-        self.macro_atom_continuum_data = atom_data.continuum_data.macro_atom_data
+        # self.macro_atom_continuum_data = atom_data.continuum_data.macro_atom_data
         self.radiative_transition_probabilities = radiative_transition_probabilities
         self.radiative_transition_probabilities_prep = self._prepare_radiative_probabilities(
             radiative_transition_probabilities)

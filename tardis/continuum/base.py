@@ -73,13 +73,7 @@ class ContinuumProcess(object):
         return self.input.ionization_energies.loc[ion_number_index, 'ionization_energy']
 
     def _get_continuum_edge_idx(self, multi_index):
-        return self.input.continuum_data.set_index(['atomic_number', 'ion_number',
-                                                    'level_number_lower']).loc[multi_index, 'continuum_edge_idx']
-
-    def _get_block_references(self, probabilities):
-        block_references = probabilities[0].groupby(level=0).count().cumsum().values
-        block_references = np.hstack([[0], block_references])
-        return block_references
+        return self.input.continuum_data.loc[multi_index, 'continuum_edge_idx']
 
     @staticmethod
     def _normalize_transition_probabilities(dataframe, no_ref_columns=0):
