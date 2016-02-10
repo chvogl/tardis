@@ -132,7 +132,7 @@ rpacket_doppler_factor (const rpacket_t *packet, const storage_model_t *storage)
 }
 
 /* Methods for calculating continuum opacities */
-double
+/*double
 bf_cross_section(const storage_model_t * storage, int64_t continuum_id, double comov_nu)
 {
   int64_t result;
@@ -150,6 +150,18 @@ bf_cross_section(const storage_model_t * storage, int64_t continuum_id, double c
         * (storage->photo_xsect[continuum_id]->x_sect[result] - storage->photo_xsect[continuum_id]->x_sect[result-1]);
       return bf_xsect;
     }
+}*/
+
+double
+bf_cross_section(const storage_model_t * storage, int64_t continuum_id, double comov_nu)
+{
+  double nu_ratio = (storage->photo_xsect[continuum_id]->nu[0]/comov_nu);
+  double bf_xsect = 0.0;
+  if (nu_ratio > 0.05)
+    {
+      double bf_xsect = storage->photo_xsect[continuum_id]->x_sect[0] * pow(nu_ratio,3);
+    }
+  return bf_xsect;
 }
 
 void calculate_chi_bf(rpacket_t * packet, storage_model_t * storage)
@@ -316,7 +328,15 @@ compute_distance2continuum(rpacket_t * packet, storage_model_t * storage)
 
   if (storage->cont_status == CONTINUUM_ON)
   {
-    calculate_chi_bf(packet, storage);
+    if (packet->compute_chi_bf)
+      {
+        calculate_chi_bf(packet, storage);
+      }
+    else
+      {
+        packet->compute_chi_bf=true;
+      }
+    //calculate_chi_bf(packet, storage);
     double chi_boundfree = rpacket_get_chi_boundfree(packet);
     (storage->ff_status == FREE_FREE_ON) ? calculate_chi_ff(packet, storage) : rpacket_set_chi_freefree(packet, 0.0);
     chi_freefree = rpacket_get_chi_freefree(packet);
@@ -337,10 +357,8 @@ compute_distance2continuum(rpacket_t * packet, storage_model_t * storage)
     {
 	  //Set all continuum distances to MISS_DISTANCE in case of an virtual_packet
 	  rpacket_set_d_continuum(packet, MISS_DISTANCE);
-	  //rpacket_set_chi_boundfree(packet, 0.0);
-	  //rpacket_set_chi_electron(packet, chi_electron);
-	  //rpacket_set_chi_freefree(packet, 0.0);
       rpacket_set_chi_continuum(packet, chi_continuum);
+      packet->compute_chi_bf = false;
 	}
 	else
 	{
@@ -408,7 +426,6 @@ int64_t *cooling_references, int64_t no_of_individual_processes)
 {
   int64_t shell_id = rpacket_get_current_shell_id(packet), j = -1;
   double zrand = (rk_double(mt_state)), p = 0.0;
-
   // TODO: maybe sum before and use bisection
   do
     {
@@ -901,6 +918,7 @@ move_packet_across_shell_boundary (rpacket_t * packet,
       rpacket_set_tau_event (packet,
 			     rpacket_get_tau_event (packet) +
 			     delta_tau_event);
+	  packet->compute_chi_bf = true;
     }
   else
     {
@@ -1187,6 +1205,7 @@ montecarlo_line_scatter (rpacket_t * packet, storage_model_t * storage,
     {
       rpacket_set_tau_event (packet,
 			     rpacket_get_tau_event (packet) - tau_line);
+	  packet->compute_chi_bf = false;
 	  test_for_close_line(packet, storage);
     }
 }

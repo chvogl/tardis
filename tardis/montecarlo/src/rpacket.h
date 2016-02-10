@@ -69,6 +69,7 @@ typedef struct RPacket
   double chi_bf; /**< Opacity due to bound-free processes */
   double *chi_bf_tmp_partial;
   int64_t macro_atom_activation_level;
+  bool compute_chi_bf;
 } rpacket_t;
 
 static inline double rpacket_get_nu (const rpacket_t * packet)
