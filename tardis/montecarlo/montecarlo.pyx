@@ -129,6 +129,12 @@ cdef extern from "src/cmontecarlo.h":
         double *photo_ion_estimator
         double *stim_recomb_estimator
         int_type_t *photo_ion_estimator_statistics
+        int_type_t *last_interaction_in_id;
+        int_type_t *last_interaction_out_id;
+        int_type_t *last_interaction_out_type;
+        int_type_t *last_non_es_interaction_type;
+        double *j_nu_estimator;
+        int_type_t no_j_nu_bins;
 
     void montecarlo_main_loop(storage_model_t * storage, int_type_t virtual_packet_flag, int nthreads, unsigned long seed)
 
@@ -277,6 +283,8 @@ cdef initialize_storage_model(model, runner, storage_model_t *storage):
         storage.photo_ion_estimator = <double*> PyArray_DATA(runner.photo_ion_estimator)
         storage.stim_recomb_estimator = <double*> PyArray_DATA(runner.stim_recomb_estimator)
         storage.photo_ion_estimator_statistics = <int_type_t*> PyArray_DATA(runner.photo_ion_estimator_statistics)
+        storage.j_nu_estimator = <double*> PyArray_DATA(runner.j_nu_estimator)
+        storage.no_j_nu_bins = runner.j_nu_estimator.shape[0]
 
         # Bound-free data
         storage.l_pop = <double*> PyArray_DATA(model.atom_data.continuum_data.level_number_density)
@@ -325,6 +333,13 @@ cdef initialize_storage_model(model, runner, storage_model_t *storage):
                     storage.coll_ion_cooling_prob_individual = cooling_prob_individual
                     storage.coll_ion_cooling_references = references
                     storage.coll_ion_cooling_prob_nd = prob_array_nd
+
+                    # Logging
+        storage.last_interaction_out_type = <int_type_t*> PyArray_DATA(runner.last_interaction_out_type)
+        storage.last_interaction_in_id = <int_type_t*> PyArray_DATA(runner.last_interaction_in_id)
+        storage.last_interaction_out_id = <int_type_t*> PyArray_DATA(runner.last_interaction_out_id)
+        storage.last_non_es_interaction_type = <int_type_t*> PyArray_DATA(runner.last_non_es_interaction_type)
+
 
 def montecarlo_radial1d(model, runner, int_type_t virtual_packet_flag=0,
                         int nthreads=4):

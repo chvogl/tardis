@@ -76,7 +76,6 @@ class MontecarloRunner(object):
         self.last_interaction_type = -1 * np.ones(no_of_packets, dtype=np.int64)
         self.last_interaction_in_nu = np.zeros(no_of_packets, dtype=np.float64)
 
-
         self.legacy_montecarlo_virtual_luminosity = np.zeros_like(
             self.spectrum_frequency.value)
 
@@ -96,7 +95,7 @@ class MontecarloRunner(object):
         self.volume = model.tardis_config.structure.volumes
         self._initialize_estimator_arrays(self.volume.shape[0],
                                           model.plasma_array.tau_sobolevs.shape)
-        self._initialize_continuum_estimator_arrays(model)
+        self._initialize_continuum_arrays(model, no_of_packets)
         self._initialize_geometry_arrays(model.tardis_config.structure)
 
         self._initialize_packets(model.t_inner.value,
@@ -216,11 +215,20 @@ class MontecarloRunner(object):
     def calculate_f_lambda(self, wavelength):
         pass
 
-    def _initialize_continuum_estimator_arrays(self, model):
+    def _initialize_continuum_arrays(self, model, no_of_packets):
         if model.tardis_config.plasma['continuum_treatment'] == True:
-            photo_ion_shape = model.base_continuum.radiative_ionization.rate_coefficient.shape
-            self.photo_ion_estimator = np.zeros(photo_ion_shape, dtype=np.float64)
-            self.stim_recomb_estimator = np.zeros(photo_ion_shape, dtype=np.float64)
-            self.photo_ion_estimator_statistics = np.zeros(photo_ion_shape, dtype=np.int64)
-        else:
-            pass
+            self._initialize_continuum_estimator_arrays(model)
+            self._initialize_continuum_logging_arrays(model, no_of_packets)
+
+    def _initialize_continuum_estimator_arrays(self, model):
+        photo_ion_shape = model.base_continuum.radiative_ionization.rate_coefficient.shape
+        self.photo_ion_estimator = np.zeros(photo_ion_shape, dtype=np.float64)
+        self.stim_recomb_estimator = np.zeros(photo_ion_shape, dtype=np.float64)
+        self.photo_ion_estimator_statistics = np.zeros(photo_ion_shape, dtype=np.int64)
+        self.j_nu_estimator = np.zeros((1000, model.tardis_config.structure.no_of_shells))
+
+    def _initialize_continuum_logging_arrays(self, model, no_of_packets):
+        self.last_interaction_in_id = -1 * np.ones(no_of_packets, dtype=np.int64)
+        self.last_interaction_out_id = -1 * np.ones(no_of_packets, dtype=np.int64)
+        self.last_interaction_out_type = -1 * np.ones(no_of_packets, dtype=np.int64)
+        self.last_non_es_interaction_type = -1 * np.ones(no_of_packets, dtype=np.int64)

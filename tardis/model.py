@@ -97,6 +97,8 @@ class Radial1DModel(object):
         self.ws = self.calculate_geometric_w(
             tardis_config.structure.r_middle,
             tardis_config.structure.r_inner[0])
+        # WARNING
+        self.ws = np.ones_like(self.ws)
 
         if tardis_config.plasma.t_rads is None:
             self.t_rads = self._init_t_rad(
@@ -107,6 +109,21 @@ class Radial1DModel(object):
         heating_rate_data_file = getattr(
             tardis_config.plasma, 'heating_rate_data_file', None)
 
+        # self.plasma_array = LegacyPlasmaArray(
+        # tardis_config.number_densities, tardis_config.atom_data,
+        #     tardis_config.supernova.time_explosion.to('s').value,
+        #     nlte_config=tardis_config.plasma.nlte,
+        #     delta_treatment=tardis_config.plasma.delta_treatment,
+        #     ionization_mode=tardis_config.plasma.ionization,
+        #     excitation_mode=tardis_config.plasma.excitation,
+        #     line_interaction_type=tardis_config.plasma.line_interaction_type,
+        #     link_t_rad_t_electron=0.9,
+        #     helium_treatment=tardis_config.plasma.helium_treatment,
+        #     heating_rate_data_file=heating_rate_data_file,
+        #     v_inner=tardis_config.structure.v_inner,
+        #     v_outer=tardis_config.structure.v_outer,
+        #     continuum_treatment=self.tardis_config.plasma['continuum_treatment'])
+
         self.plasma_array = LegacyPlasmaArray(
             tardis_config.number_densities, tardis_config.atom_data,
             tardis_config.supernova.time_explosion.to('s').value,
@@ -115,7 +132,7 @@ class Radial1DModel(object):
             ionization_mode=tardis_config.plasma.ionization,
             excitation_mode=tardis_config.plasma.excitation,
             line_interaction_type=tardis_config.plasma.line_interaction_type,
-            link_t_rad_t_electron=0.9,
+            link_t_rad_t_electron=1.0,
             helium_treatment=tardis_config.plasma.helium_treatment,
             heating_rate_data_file=heating_rate_data_file,
             v_inner=tardis_config.structure.v_inner,

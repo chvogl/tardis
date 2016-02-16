@@ -4,6 +4,8 @@
 #endif
 #include "cmontecarlo.h"
 
+#define STATUS_FORMAT "\r\033[2K\t[%" PRId64 "%%] Packets(finished/total): %" PRId64 "/%" PRId64
+
 /** Look for a place to insert a value in an inversely sorted float array.
  *
  * @param x an inversely (largest to lowest) sorted float array
@@ -159,7 +161,7 @@ bf_cross_section(const storage_model_t * storage, int64_t continuum_id, double c
   double bf_xsect = 0.0;
   if (nu_ratio > 0.05)
     {
-      double bf_xsect = storage->photo_xsect[continuum_id]->x_sect[0] * pow(nu_ratio,3);
+      bf_xsect = storage->photo_xsect[continuum_id]->x_sect[0] * pow(nu_ratio,3);
     }
   return bf_xsect;
 }
@@ -603,6 +605,10 @@ void line_emission(rpacket_t * packet, storage_model_t * storage, rk_state *mt_s
 	  virtual_close_line = false;
     }
   test_for_close_line(packet, storage);
+  storage->last_interaction_out_type[rpacket_get_id (packet)] = 2;
+  #ifdef WITH_CONTINUUM
+  storage->last_interaction_out_id[rpacket_get_id (packet)] = emission_line_id;
+  #endif
 }
 
 void bf_emission(rpacket_t * packet, storage_model_t * storage, rk_state *mt_state)
@@ -623,7 +629,9 @@ void bf_emission(rpacket_t * packet, storage_model_t * storage, rk_state *mt_sta
   rpacket_set_next_line_id (packet, current_line_id);
   rpacket_set_last_line (packet, last_line);
   test_for_close_line(packet, storage);
-  // Missing: set some interaction ids
+
+  storage->last_interaction_out_type[rpacket_get_id (packet)] = 3;
+  storage->last_interaction_out_id[rpacket_get_id (packet)] = emission_continuum_id;
 
   if (rpacket_get_virtual_packet_flag (packet) > 0)
     {
@@ -648,7 +656,7 @@ void ff_emission(rpacket_t * packet, storage_model_t * storage, rk_state *mt_sta
   rpacket_set_next_line_id (packet, current_line_id);
   rpacket_set_last_line (packet, last_line);
   test_for_close_line(packet, storage);
-  // Missing: set some interaction ids
+  storage->last_interaction_out_type[rpacket_get_id (packet)] = 1;
 
   if (rpacket_get_virtual_packet_flag (packet) > 0)
     {
@@ -732,6 +740,10 @@ move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
 	    comov_energy * distance * comov_nu;
 #ifdef WITH_CONTINUUM
       increment_photo_ion_estimator(packet, storage, distance, comov_nu, comov_energy);
+      if ((comov_nu > storage->spectrum_start_nu) && (comov_nu < storage->spectrum_end_nu))
+        {
+          increment_j_nu_estimator(packet, storage, distance, comov_nu, comov_energy);
+        }
 #endif // WITH_CONTINUUM
 	}
     }
@@ -774,6 +786,20 @@ increment_photo_ion_estimator (const rpacket_t * packet, storage_model_t * stora
         storage->photo_ion_estimator_statistics[photo_ion_idx] += 1;
         }
     }
+}
+
+void
+increment_j_nu_estimator(const rpacket_t * packet, storage_model_t * storage, double distance,
+ double comov_nu, double comov_energy)
+{
+  double delta_nu = (storage->spectrum_end_nu - storage->spectrum_start_nu)/storage->no_j_nu_bins;
+  int64_t i = (comov_nu - storage->spectrum_start_nu)/delta_nu;
+  int64_t shell_id = rpacket_get_current_shell_id(packet);
+  int64_t j_nu_idx = i * storage->no_of_shells + shell_id;
+  #ifdef WITHOPENMP
+  #pragma omp atomic
+  #endif
+  storage->j_nu_estimator[j_nu_idx] += comov_energy * distance;
 }
 
 void
@@ -976,6 +1002,11 @@ montecarlo_thomson_scatter (rpacket_t * packet, storage_model_t * storage,
   rpacket_reset_tau_event (packet, mt_state);
   rpacket_set_recently_crossed_boundary (packet, 0);
   storage->last_interaction_type[rpacket_get_id (packet)] = 1;
+  #ifdef WITH_CONTINUUM
+  storage->last_non_es_interaction_type[rpacket_get_id (packet)] =
+    storage->last_interaction_out_type[rpacket_get_id (packet)];
+  storage->last_interaction_out_type[rpacket_get_id (packet)] = 1;
+  #endif WITH_CONTINUUM
   if (rpacket_get_virtual_packet_flag (packet) > 0)
     {
       montecarlo_one_packet (storage, packet, 1, mt_state);
@@ -1018,6 +1049,7 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
   double comov_energy = rpacket_get_energy (packet) * old_doppler_factor;
   rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
   storage->last_interaction_type[rpacket_get_id (packet)] = 3; // last interaction was a bf-absorption
+  storage->last_interaction_in_id[rpacket_get_id (packet)] = ccontinuum;
 
   // TODO: maybe only do that if we create IONIZATION_ENERGY
   rpacket_set_macro_atom_activation_level(packet,
@@ -1181,8 +1213,9 @@ montecarlo_line_scatter (rpacket_t * packet, storage_model_t * storage,
       rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
       storage->last_interaction_in_nu[rpacket_get_id (packet)] =
   rpacket_get_nu (packet);
-      storage->last_line_interaction_in_id[rpacket_get_id (packet)] =
-	rpacket_get_next_line_id (packet) - 1;
+      //storage->last_line_interaction_in_id[rpacket_get_id (packet)] =
+	//rpacket_get_next_line_id (packet) - 1;
+	storage->last_interaction_in_id[rpacket_get_id (packet)] = rpacket_get_next_line_id (packet) - 1;
       storage->last_line_interaction_shell_id[rpacket_get_id (packet)] =
 	rpacket_get_current_shell_id (packet);
       storage->last_interaction_type[rpacket_get_id (packet)] = 2;
@@ -1339,6 +1372,7 @@ montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
 void
 montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int nthreads, unsigned long seed)
 {
+  int64_t finished_packets = 0;
   storage->virt_packet_count = 0;
 #ifdef WITH_VPACKET_LOGGING
   storage->virt_packet_nus = (double *)malloc(sizeof(double) * storage->no_of_packets);
@@ -1386,6 +1420,23 @@ montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int
 #endif // WITH_OPENMP
   for (int64_t packet_index = 0; packet_index < storage->no_of_packets; packet_index++)
     {
+      ++finished_packets;
+      if ( finished_packets%100 == 0 ) {
+#ifdef WITHOPENMP
+        // WARNING: This only works with a static sheduler and gives an approximation of progress.
+        // The alternative would be to have a shared variable but that could potentially decrease performance when using many threads.
+        if (omp_get_thread_num() == 0 )
+          fprintf(stderr, STATUS_FORMAT,
+              finished_packets * omp_get_num_threads() * 100 / storage->no_of_packets,
+              finished_packets * omp_get_num_threads(),
+              storage->no_of_packets);
+#else
+        fprintf(stderr, STATUS_FORMAT,
+                finished_packets * 100 / storage->no_of_packets,
+                finished_packets,
+                storage->no_of_packets);
+#endif
+      }
       int reabsorbed = 0;
       rpacket_t packet;
       rpacket_set_id(&packet, packet_index);

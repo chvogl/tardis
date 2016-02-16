@@ -299,6 +299,8 @@ class Simulation(object):
         model.iterations_executed = iterations_executed
         model.iterations_max_requested = iterations_max_requested
 
+        model.j_nus = self._calculate_j_nus(model)
+
         logger.info("Finished in {0:d} iterations and took {1:.2f} s".format(
             iterations_executed, time.time()-start_time))
 
@@ -365,6 +367,16 @@ class Simulation(object):
             model.continuum_estimators['photo_ionization'] = self.runner.photo_ion_estimator
             model.continuum_estimators['stim_recombination'] = self.runner.stim_recomb_estimator
             model.continuum_estimators['statistics'] = self.runner.photo_ion_estimator_statistics
+
+    def _calculate_j_nus(self, model):
+        nu_start = model.tardis_config.spectrum.frequency.min()
+        nu_end = model.tardis_config.spectrum.frequency.max()
+        nus = np.linspace(nu_start, nu_end, self.runner.j_nu_estimator.shape[0])
+        j_nu_norm_factor = model.j_blues_norm_factor
+        j_nus = pd.DataFrame(self.runner.j_nu_estimator)
+        j_nus = j_nus.multiply(j_nu_norm_factor, axis=1)
+        j_nus.insert(0, "nu", nus)
+        return j_nus
 
 def run_radial1d(radial1d_model, history_fname=None):
     if history_fname is not None:

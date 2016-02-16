@@ -139,4 +139,8 @@ void
 increment_photo_ion_estimator (const rpacket_t * packet, storage_model_t * storage, double distance,
                             double comov_nu, double comov_energy);
 
+void
+increment_j_nu_estimator (const rpacket_t * packet, storage_model_t * storage, double distance,
+                            double comov_nu, double comov_energy);
+
 #endif // TARDIS_CMONTECARLO_H

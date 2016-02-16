@@ -107,6 +107,12 @@ typedef struct StorageModel
   double *photo_ion_estimator;
   double *stim_recomb_estimator;
   int64_t *photo_ion_estimator_statistics;
+  int64_t *last_interaction_in_id;
+  int64_t *last_interaction_out_id;
+  int64_t *last_interaction_out_type;
+  int64_t *last_non_es_interaction_type;
+  double *j_nu_estimator;
+  int64_t no_j_nu_bins;
 } storage_model_t;
 
 #endif // TARDIS_STORAGE_H
