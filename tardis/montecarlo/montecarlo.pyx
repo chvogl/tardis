@@ -129,12 +129,13 @@ cdef extern from "src/cmontecarlo.h":
         double *photo_ion_estimator
         double *stim_recomb_estimator
         int_type_t *photo_ion_estimator_statistics
-        int_type_t *last_interaction_in_id;
-        int_type_t *last_interaction_out_id;
-        int_type_t *last_interaction_out_type;
-        int_type_t *last_non_es_interaction_type;
-        double *j_nu_estimator;
-        int_type_t no_j_nu_bins;
+        int_type_t *last_interaction_in_id
+        int_type_t *last_interaction_out_id
+        int_type_t *last_interaction_out_type
+        int_type_t *last_non_es_interaction_type
+        double *j_nu_estimator
+        int_type_t no_j_nu_bins
+        int_type_t *continuum_absorption_counter
 
     void montecarlo_main_loop(storage_model_t * storage, int_type_t virtual_packet_flag, int nthreads, unsigned long seed)
 
@@ -339,6 +340,8 @@ cdef initialize_storage_model(model, runner, storage_model_t *storage):
         storage.last_interaction_in_id = <int_type_t*> PyArray_DATA(runner.last_interaction_in_id)
         storage.last_interaction_out_id = <int_type_t*> PyArray_DATA(runner.last_interaction_out_id)
         storage.last_non_es_interaction_type = <int_type_t*> PyArray_DATA(runner.last_non_es_interaction_type)
+        # TODO: remove
+        storage.continuum_absorption_counter = <int_type_t*> PyArray_DATA(runner.continuum_absorption_counter)
 
 
 def montecarlo_radial1d(model, runner, int_type_t virtual_packet_flag=0,

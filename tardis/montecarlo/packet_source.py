@@ -58,6 +58,12 @@ class BlackBodySimpleSource(object):
 
         return x * (const.k_B.cgs.value * T) / const.h.cgs.value
 
+    def create_packet_nus_gauss(self, T, no_of_packets):
+        from numpy.random import normal
+
+        nu_max = 5.878933e10 * T
+        return normal(0.7 * nu_max, 1e14, no_of_packets)
+
     def create_packet_mus(self, no_of_packets):
         """
         Create
@@ -71,7 +77,8 @@ class BlackBodySimpleSource(object):
 
 
     def create_packets(self, T, no_of_packets):
-        nus = self.create_packet_nus(T, no_of_packets)
+        # nus = self.create_packet_nus(T, no_of_packets)
+        nus = self.create_packet_nus_gauss(T, no_of_packets)
         mus = self.create_packet_mus(no_of_packets)
         energies = self.create_packet_energies(no_of_packets)
 

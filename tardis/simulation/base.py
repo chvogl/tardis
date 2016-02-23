@@ -372,8 +372,11 @@ class Simulation(object):
         nu_start = model.tardis_config.spectrum.frequency.min()
         nu_end = model.tardis_config.spectrum.frequency.max()
         nus = np.linspace(nu_start, nu_end, self.runner.j_nu_estimator.shape[0])
-        j_nu_norm_factor = model.j_blues_norm_factor
-        j_nus = pd.DataFrame(self.runner.j_nu_estimator)
+        delta_nu = nus[1] - nus[0]
+        import astropy.constants as constants
+
+        j_nu_norm_factor = ((4 * np.pi * model.time_of_simulation * model.tardis_config.structure.volumes)) ** -1
+        j_nus = pd.DataFrame(self.runner.j_nu_estimator / delta_nu)
         j_nus = j_nus.multiply(j_nu_norm_factor, axis=1)
         j_nus.insert(0, "nu", nus)
         return j_nus

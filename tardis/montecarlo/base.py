@@ -232,3 +232,4 @@ class MontecarloRunner(object):
         self.last_interaction_out_id = -1 * np.ones(no_of_packets, dtype=np.int64)
         self.last_interaction_out_type = -1 * np.ones(no_of_packets, dtype=np.int64)
         self.last_non_es_interaction_type = -1 * np.ones(no_of_packets, dtype=np.int64)
+        self.continuum_absorption_counter = np.zeros(no_of_packets, dtype=np.int64)

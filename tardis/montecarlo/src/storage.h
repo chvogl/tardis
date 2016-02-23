@@ -113,6 +113,7 @@ typedef struct StorageModel
   int64_t *last_non_es_interaction_type;
   double *j_nu_estimator;
   int64_t no_j_nu_bins;
+  int64_t *continuum_absorption_counter;
 } storage_model_t;
 
 #endif // TARDIS_STORAGE_H
