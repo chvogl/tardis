@@ -123,6 +123,10 @@ class PhotoionizationData(object):
             fname = default_photoionization_h5_path
         photoionization_data = cls.read_photoionization_data(fname)
         cls.has_needed_photoionization_data(atom_data=atom_data, photoionization_data_all=photoionization_data)
+        photoionization_data.loc[(1, 0, 1), 'x_sect'] *= 20.
+        photoionization_data.loc[[(1, 0, 2)], 'x_sect'] *= 8.
+        photoionization_data.loc[[(1, 0, 3)], 'x_sect'] *= 14.
+        photoionization_data.loc[(1, 0, 0), 'x_sect'] /= 3.e4
         return photoionization_data
 
     @staticmethod
