@@ -194,12 +194,12 @@ void calculate_chi_bf(rpacket_t * packet, storage_model_t * storage)
           }
         break;
       }
-    bf_helper += l_pop * bf_x_sect * (1.0 - l_pop_r * boltzmann_factor);
+    bf_helper += l_pop * bf_x_sect * (1.0 - l_pop_r * boltzmann_factor) * doppler_factor;
 
     packet->chi_bf_tmp_partial[i] = bf_helper;
   }
 
-  rpacket_set_chi_boundfree(packet, bf_helper * doppler_factor);
+  rpacket_set_chi_boundfree(packet, bf_helper);
 }
 
 void calculate_chi_ff(rpacket_t * packet, const storage_model_t * storage)
@@ -735,7 +735,7 @@ move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
 #endif // WITH_CONTINUUM
 	}
     }
-  return doppler_factor;
+  return rpacket_doppler_factor (packet, storage);
 }
 
 
@@ -989,7 +989,6 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
   int64_t current_continuum_id = rpacket_get_current_continuum_id(packet);
 
   // Determine in which continuum the bf-absorption occurs
-  double nu = rpacket_get_nu(packet);
   double chi_bf = rpacket_get_chi_boundfree(packet);
   // get new zrand
   double zrand = rk_double(mt_state);
@@ -1010,6 +1009,8 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
 //      ccontinuum = current_continuum_id;
 //   }
 
+  double comov_nu = rpacket_get_nu(packet) * rpacket_doppler_factor (packet, storage);
+
   /* Move the packet to the place of absorption, select a direction for re-emission and impose energy conservation
      in the co-moving frame. */
   double old_doppler_factor = move_packet (packet, storage, distance);
@@ -1025,7 +1026,7 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
 
   // Convert the rpacket to thermal or ionization energy
   zrand = (rk_double(mt_state));
-  (zrand < storage->continuum_list_nu[ccontinuum] / (nu * rpacket_doppler_factor (packet, storage))) ?
+  (zrand < storage->continuum_list_nu[ccontinuum] / comov_nu) ?
     e_packet(packet, storage, IONIZATION_ENERGY, mt_state): e_packet(packet, storage, THERMAL_ENERGY, mt_state);
 }
 
