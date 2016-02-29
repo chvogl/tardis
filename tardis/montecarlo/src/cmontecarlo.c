@@ -159,7 +159,7 @@ bf_cross_section(const storage_model_t * storage, int64_t continuum_id, double c
   double bf_xsect = 0.0;
   if (nu_ratio > 0.05)
     {
-      double bf_xsect = storage->photo_xsect[continuum_id]->x_sect[0] * pow(nu_ratio,3);
+      bf_xsect = storage->photo_xsect[continuum_id]->x_sect[0] * pow(nu_ratio,3);
     }
   return bf_xsect;
 }
