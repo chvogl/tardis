@@ -15,8 +15,8 @@ class ContinuumInputData(object):
         self.t_rads = plasma_array.t_rad
         self.link_t_rad_t_electron = plasma_array.link_t_rad_t_electron
         self.ion_number_density = plasma_array.ion_number_density
-        # TODO: Replace level population with LTE level population
-        self.lte_level_pop = plasma_array.level_number_density
+        self.lte_ion_number_density = plasma_array.lte_ion_number_density
+        self.lte_level_pop = plasma_array.lte_level_number_density
         self.level_pop = plasma_array.level_number_density
 
         # Radiation field

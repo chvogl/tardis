@@ -6,7 +6,7 @@ from tardis.plasma.properties.base import ProcessingPlasmaProperty
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['LevelNumberDensity']
+__all__ = ['LevelNumberDensity', 'LTELevelNumberDensity']
 
 class LevelNumberDensity(ProcessingPlasmaProperty):
     """
@@ -75,3 +75,13 @@ class LevelNumberDensity(ProcessingPlasmaProperty):
         if helium_population is not None:
             level_number_density.ix[2].update(helium_population)
         return level_number_density
+
+
+class LTELevelNumberDensity(LevelNumberDensity):
+    outputs = ('lte_level_number_density',)
+    latex_name = ('N_{i,j,k}^*',)
+
+    def _calculate_dilute_lte(self, lte_level_boltzmann_factor, lte_ion_number_density,
+                              levels, lte_partition_function):
+        return super(LTELevelNumberDensity, self)._calculate_dilute_lte(
+            lte_level_boltzmann_factor, lte_ion_number_density, levels, lte_partition_function)

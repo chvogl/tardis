@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from tardis.continuum.exceptions import IncompletePhotoionizationDataError
+from tardis.continuum.util import *
 
 
 default_photoionization_h5_path = os.path.join(os.path.dirname(__file__), 'data', 'photoionization_data_H.h5')
@@ -104,13 +105,25 @@ class MCDataMixin(object):
         level_number_density_tmp = level_number_density.loc[self.multi_index_nu_sorted].values.transpose()
         self.level_number_density = np.ascontiguousarray(level_number_density_tmp)
 
-    def set_level_number_density_ratio(self, level_number_density, lte_level_number_density):
+    def set_level_number_density_ratio(self, plasma_array):
+        level_number_density = plasma_array.level_number_density
+        lte_level_number_density = plasma_array.lte_level_number_density
+        ion_number_density = plasma_array.ion_number_density
+        lte_ion_number_density = plasma_array.lte_ion_number_density
+
         level_number_density_tmp = level_number_density.loc[self.multi_index_nu_sorted]
         lte_level_number_density_tmp = lte_level_number_density.loc[self.multi_index_nu_sorted]
         level_number_density_ratio = lte_level_number_density_tmp.divide(level_number_density_tmp)
-        level_number_density_ratio = level_number_density_ratio.values.transpose()
-        self.level_number_density_ratio = np.ascontiguousarray(level_number_density_ratio)
 
+        ion_index = get_ion_multi_index(self.multi_index_nu_sorted, next_higher=True)
+        ion_number_density_tmp = ion_number_density.loc[ion_index]
+        lte_ion_number_density_tmp = lte_ion_number_density.loc[ion_index]
+        ion_number_density_ratio = ion_number_density_tmp.divide(lte_ion_number_density_tmp)
+
+        level_number_density_ratio = level_number_density_ratio.multiply(ion_number_density_ratio.values)
+        level_number_density_ratio = level_number_density_ratio.values.transpose()
+
+        self.level_number_density_ratio = np.ascontiguousarray(level_number_density_ratio)
 
 class ContinuumData(BaseContinuumData, MCDataMixin):
     pass

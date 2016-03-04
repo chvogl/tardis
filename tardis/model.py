@@ -248,9 +248,7 @@ class Radial1DModel(object):
 
             self.atom_data.continuum_data.set_level_number_density(self.plasma_array.level_number_density)
 
-            self.atom_data.continuum_data.set_level_number_density_ratio(
-                level_number_density=self.plasma_array.level_number_density,
-                lte_level_number_density=self.plasma_array.level_number_density)
+            self.atom_data.continuum_data.set_level_number_density_ratio(self.plasma_array)
 
     def save_spectra(self, fname):
         self.spectrum.to_ascii(fname)

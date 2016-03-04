@@ -15,8 +15,8 @@ from tardis.plasma.exceptions import PlasmaIonizationError
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['PhiSahaNebular', 'PhiSahaLTE', 'RadiationFieldCorrection',
-           'IonNumberDensity']
+__all__ = ['PhiSahaNebular', 'PhiSahaLTE', 'PhiSahaLTECont', 'RadiationFieldCorrection',
+           'IonNumberDensity', 'LTEIonNumberDensity']
 
 
 def calculate_block_ids_from_dataframe(dataframe):
@@ -71,7 +71,9 @@ class PhiSahaLTE(ProcessingPlasmaProperty):
     def _calculate_block_ids(partition_function):
         partition_function.index.get_level_values(0).unique()
 
-
+class PhiSahaLTECont(PhiSahaLTE):
+    outputs = ('phi_lte',)
+    latex_name = ('\\Phi_lte',)
 
 class PhiSahaNebular(ProcessingPlasmaProperty):
     """
@@ -264,3 +266,11 @@ class IonNumberDensity(ProcessingPlasmaProperty):
                 break
             n_electron = 0.5 * (new_n_electron + n_electron)
         return ion_number_density, n_electron
+
+class LTEIonNumberDensity(IonNumberDensity):
+    outputs = ('lte_ion_number_density', )
+    latex_name = ('N_{i,j}^*',)
+
+    def calculate(self, phi_lte, partition_function, number_density, electron_densities):
+        return self.calculate_with_n_electron(
+            phi_lte, partition_function, number_density, electron_densities)

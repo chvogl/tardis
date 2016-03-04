@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['LevelBoltzmannFactorLTE', 'LevelBoltzmannFactorDiluteLTE',
            'LevelBoltzmannFactorNoNLTE', 'LevelBoltzmannFactorNLTE',
-           'PartitionFunction']
+           'PartitionFunction', 'LevelBoltzmannFactorLTECont', 'LTEPartitionFunction']
 
 class LevelBoltzmannFactorLTE(ProcessingPlasmaProperty):
     """
@@ -231,3 +231,12 @@ class PartitionFunction(ProcessingPlasmaProperty):
     def calculate(self, level_boltzmann_factor):
         return level_boltzmann_factor.groupby(
             level=['atomic_number', 'ion_number']).sum()
+
+class LevelBoltzmannFactorLTECont(LevelBoltzmannFactorLTE):
+    outputs = ('lte_level_boltzmann_factor',)
+
+class LTEPartitionFunction(PartitionFunction):
+    outputs = ('lte_partition_function',)
+
+    def calculate(self, lte_level_boltzmann_factor):
+        return super(LTEPartitionFunction, self).calculate(lte_level_boltzmann_factor)

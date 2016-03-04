@@ -153,7 +153,7 @@ class CollisionalRecombination(InverseProcess):
         """
         level_lower_index = inverse_process.rate_coefficient.index
         lte_level_pop_lower = inverse_process._get_lte_level_pop(level_lower_index)
-        lte_pop_continuum = inverse_process._get_ion_number_density(level_lower_index)
+        lte_pop_continuum = inverse_process._get_lte_ion_number_density(level_lower_index)
         rate_coeff = inverse_process.rate_coefficient * (lte_level_pop_lower / lte_pop_continuum)
         # Needed for consistency with the radiative recombination rate coefficient
         rate_coeff = rate_coeff.divide(inverse_process.electron_densities, axis=1)

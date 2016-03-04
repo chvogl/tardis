@@ -64,8 +64,7 @@ class ContinuumProcess(object):
     @data_type_selection
     def _get_lte_ion_number_density(self, multi_index_full):
         ion_number_index = self._get_ion_multi_index(multi_index_full)
-        # WARNING: In the future we have to return the lte ion number density
-        return self.ion_number_density.loc[ion_number_index]
+        return self.input.lte_ion_number_density.loc[ion_number_index]
 
     @data_type_selection
     def _get_ionization_energy(self, multi_index_full):
