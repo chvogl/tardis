@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 __all__ = ['LevelBoltzmannFactorLTE', 'LevelBoltzmannFactorDiluteLTE',
            'LevelBoltzmannFactorNoNLTE', 'LevelBoltzmannFactorNLTE',
-           'PartitionFunction', 'LevelBoltzmannFactorLTECont', 'LTEPartitionFunction']
+           'PartitionFunction', 'LevelBoltzmannFactorLTECont', 'LTEPartitionFunction',
+           'LevelBoltzmannFactorLTETe', 'LTEPartitionFunctionTe']
 
 class LevelBoltzmannFactorLTE(ProcessingPlasmaProperty):
     """
@@ -37,6 +38,26 @@ class LevelBoltzmannFactorLTE(ProcessingPlasmaProperty):
                                               columns=np.arange(len(beta_rad)),
                                               dtype=np.float64)
         return level_boltzmann_factor
+
+class LevelBoltzmannFactorLTETe(LevelBoltzmannFactorLTE):
+    """
+    Attributes
+    ----------
+    level_boltzmann_factor_LTE_Te : Pandas DataFrame, dtype float
+                             Level population proportionality values for LTE.
+                             Evaluated at the kinetic temperature T_e. Indexed
+                             by atomic number, ion number, level number.
+                             Columns corresponding to zones.
+    """
+    outputs = ('lte_level_boltzmann_factor_Te',)
+    latex_name = ('bf_{i,j,k}^{\\textrm{LTE}}(T_e)',)
+    latex_formula = ('g_{i,j,k}e^{\\dfrac{-\\epsilon_{i,j,k}}{k_{\
+        \\textrm{B}}T_{\\textrm{electron}}}}',)
+
+    @staticmethod
+    def calculate(excitation_energy, g, beta_electron, levels):
+        return super(LevelBoltzmannFactorLTETe, LevelBoltzmannFactorLTETe).calculate(
+            excitation_energy, g, beta_electron, levels)
 
 class LevelBoltzmannFactorDiluteLTE(ProcessingPlasmaProperty):
     """
@@ -240,3 +261,9 @@ class LTEPartitionFunction(PartitionFunction):
 
     def calculate(self, lte_level_boltzmann_factor):
         return super(LTEPartitionFunction, self).calculate(lte_level_boltzmann_factor)
+
+class LTEPartitionFunctionTe(PartitionFunction):
+    outputs = ('lte_partition_function_Te',)
+
+    def calculate(self, lte_level_boltzmann_factor_Te):
+        return super(LTEPartitionFunctionTe, self).calculate(lte_level_boltzmann_factor_Te)

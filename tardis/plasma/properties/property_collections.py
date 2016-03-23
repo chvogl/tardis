@@ -1,5 +1,6 @@
 from tardis.plasma.properties import *
 from tardis.plasma.properties.estimators import *
+from tardis.plasma.properties.continuum import *
 
 class PlasmaPropertyCollection(list):
     pass
@@ -20,7 +21,9 @@ nebular_ionization_properties = PlasmaPropertyCollection([PhiSahaNebular,
 continuum_inputs = PlasmaPropertyCollection([StimRecombRateEstimator, PhotoIonRateEstimator,
     PhotoIonRateStatistics, ContinuumData])
 continuum_lte_properties = PlasmaPropertyCollection([
-    PhiSahaLTECont, LTEIonNumberDensity, LevelBoltzmannFactorLTECont, LTEPartitionFunction, LTELevelNumberDensity])
+    PhiSahaLTECont, LTEIonNumberDensity, LevelBoltzmannFactorLTECont, LTEPartitionFunction, LTELevelNumberDensity,
+    PhiSahaElectrons, GElectronTe, LevelBoltzmannFactorLTETe, LTEPartitionFunctionTe, PhiLucy])
+continuum_interaction_properties = PlasmaPropertyCollection([SpontRecombRateCoeff])
 dilute_lte_excitation_properties = PlasmaPropertyCollection([
     LevelBoltzmannFactorDiluteLTE])
 non_nlte_properties = PlasmaPropertyCollection([LevelBoltzmannFactorNoNLTE])

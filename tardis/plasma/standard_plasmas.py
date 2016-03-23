@@ -9,7 +9,7 @@ from tardis.plasma.properties.property_collections import (basic_inputs,
     macro_atom_properties, dilute_lte_excitation_properties,
     nebular_ionization_properties, non_nlte_properties,
     nlte_properties, helium_nlte_properties, helium_numerical_nlte_properties,
-    continuum_lte_properties, continuum_inputs)
+    continuum_lte_properties, continuum_inputs, continuum_interaction_properties)
 from tardis.plasma.exceptions import PlasmaConfigError
 from tardis.plasma.properties import LevelBoltzmannFactorNLTE
 
@@ -134,6 +134,7 @@ class LegacyPlasmaArray(BasePlasma):
         if self.continuum_treatment:
             plasma_modules += continuum_lte_properties
             plasma_modules += continuum_inputs
+            plasma_modules += continuum_interaction_properties
 
         super(LegacyPlasmaArray, self).__init__(
             plasma_properties=plasma_modules, t_rad=t_rad,

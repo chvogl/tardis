@@ -8,7 +8,7 @@ from tardis.plasma.properties.base import ProcessingPlasmaProperty
 logger = logging.getLogger(__name__)
 
 __all__ = ['BetaRadiation', 'GElectron', 'NumberDensity', 'SelectedAtoms',
-           'ElectronTemperature', 'BetaElectron']
+           'ElectronTemperature', 'BetaElectron', 'GElectronTe']
 
 class BetaRadiation(ProcessingPlasmaProperty):
     """
@@ -41,6 +41,20 @@ class GElectron(ProcessingPlasmaProperty):
     def calculate(self, beta_rad):
         return ((2 * np.pi * const.m_e.cgs.value / beta_rad) /
                 (const.h.cgs.value ** 2)) ** 1.5
+
+class GElectronTe(GElectron):
+    """
+    Attributes
+    ----------
+    g_electron_Te : Numpy Array, dtype float
+    """
+    outputs = ('g_electron_Te',)
+    latex_name = ('g_{\\textrm{electron_Te}}',)
+    latex_formula = ('\\Big(\\dfrac{2\\pi m_{e}/\
+                     \\beta_{\\textrm{electron}}}{h^2}\\Big)^{3/2}',)
+
+    def calculate(self, beta_electron):
+        return super(GElectronTe, self).calculate(beta_electron)
 
 class NumberDensity(ProcessingPlasmaProperty):
     """

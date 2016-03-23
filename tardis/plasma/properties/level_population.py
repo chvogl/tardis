@@ -4,9 +4,11 @@ import numpy as np
 
 from tardis.plasma.properties.base import ProcessingPlasmaProperty
 
+from tardis.continuum.util import get_ion_multi_index
+
 logger = logging.getLogger(__name__)
 
-__all__ = ['LevelNumberDensity', 'LTELevelNumberDensity']
+__all__ = ['LevelNumberDensity', 'LTELevelNumberDensity', 'PhiLucy']
 
 class LevelNumberDensity(ProcessingPlasmaProperty):
     """
@@ -85,3 +87,23 @@ class LTELevelNumberDensity(LevelNumberDensity):
                               levels, lte_partition_function):
         return super(LTELevelNumberDensity, self)._calculate_dilute_lte(
             lte_level_boltzmann_factor, lte_ion_number_density, levels, lte_partition_function)
+
+class PhiLucy(ProcessingPlasmaProperty):
+    outputs = ('phi_lucy',)
+    latex_name = ('\\Phi_{i,\\kappa}',)
+
+    def calculate(self, phi_Te, lte_level_boltzmann_factor_Te, lte_partition_function_Te):
+        boltzmann_factor = self._prepare_boltzmann_factor(lte_level_boltzmann_factor_Te)
+        phi_saha_index = get_ion_multi_index(boltzmann_factor.index)
+        partition_function_index = get_ion_multi_index(boltzmann_factor.index, next_higher=False)
+        phi_saha = phi_Te.loc[phi_saha_index].values
+        partition_function = lte_partition_function_Te.loc[partition_function_index].values
+        return boltzmann_factor/(phi_saha * partition_function)
+
+    @staticmethod
+    def _prepare_boltzmann_factor(boltzmann_factor):
+        atomic_number = boltzmann_factor.index.get_level_values(0)
+        ion_number = boltzmann_factor.index.get_level_values(1)
+        selected_ions_mask = (atomic_number != ion_number)
+        return boltzmann_factor[selected_ions_mask]
+
