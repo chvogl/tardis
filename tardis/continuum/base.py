@@ -159,19 +159,19 @@ class ContinuumProcess(object):
 
     @property
     def photo_ion_estimator(self):
-        return self.input.estimators['photo_ionization']
+        return self.input.estimators['photo_ion_estimator']
 
     @property
     def stim_recomb_estimator(self):
-        return self.input.estimators['stim_recombination']
+        return self.input.estimators['stim_recomb_estimator']
 
-    @property
-    def photo_ion_estimator_norm_factor(self):
-        return self.input.estimators['normalization_factor']
+    #@property
+    #def photo_ion_estimator_norm_factor(self):
+    #    return self.input.estimators['photo_ion_norm_factor']
 
     @property
     def has_estimators(self):
-        if self.input.estimators.keys() != ['normalization_factor']:
+        if self.input.estimators:
             return True
         else:
             return False

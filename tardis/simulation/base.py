@@ -362,9 +362,9 @@ class Simulation(object):
 
     def set_continuum_estimators(self, model):
         if model.tardis_config.plasma['continuum_treatment'] == True:
-            model.continuum_estimators['photo_ionization'] = self.runner.photo_ion_estimator
-            model.continuum_estimators['stim_recombination'] = self.runner.stim_recomb_estimator
-            model.continuum_estimators['statistics'] = self.runner.photo_ion_estimator_statistics
+            model.continuum_estimators['photo_ion_estimator'] = self.runner.photo_ion_estimator
+            model.continuum_estimators['stim_recomb_estimator'] = self.runner.stim_recomb_estimator
+            model.continuum_estimators['photo_ion_statistics'] = self.runner.photo_ion_estimator_statistics
 
 def run_radial1d(radial1d_model, history_fname=None):
     if history_fname is not None:

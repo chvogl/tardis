@@ -50,7 +50,7 @@ class RadiativeIonization(PhysicalContinuumProcess, BoundFreeEnergyMixIn):
             logger.info('Calculating photoionization rate from MC estimators')
             rate_coefficient = self._calculate_rate_coefficient_from_estimator()
 
-            no_of_bad_elements = self._check_for_low_statistics(self.estimators['statistics'])
+            no_of_bad_elements = self._check_for_low_statistics(self.estimators['photo_ion_statistics'])
             if self.replace_values_with_low_statistics and (no_of_bad_elements != 0):
                 logger.info('Replacing {} photoionization rates with values based on the '
                             'radiation field model'.format(no_of_bad_elements))
@@ -94,15 +94,14 @@ class RadiativeIonization(PhysicalContinuumProcess, BoundFreeEnergyMixIn):
     def _calculate_rate_coefficient_from_estimator(self):
         index = self._get_estimator_index()
         lte_nonlte_level_pop_ratio = self._get_lte_nonlte_level_pop_ratio(index)
-        corrected_photoion_coeff = (self.photo_ion_estimator - lte_nonlte_level_pop_ratio * self.stim_recomb_estimator) \
-                                   * self.photo_ion_estimator_norm_factor
+        corrected_photoion_coeff = (self.photo_ion_estimator - lte_nonlte_level_pop_ratio * self.stim_recomb_estimator)
         corrected_photoion_coeff = \
             pd.DataFrame(corrected_photoion_coeff, index=index, columns=np.arange(self.no_of_shells))
         return corrected_photoion_coeff
 
     def _calculate_rate_coefficient_combination(self, rate_coeff_estimator, rate_coeff_dilute_bb, min_counts=100):
         combined_rate_coeff = \
-            rate_coeff_estimator.where(self.estimators['statistics'] > min_counts, other=rate_coeff_dilute_bb)
+            rate_coeff_estimator.where(self.estimators['photo_ion_statistics'] > min_counts, other=rate_coeff_dilute_bb)
         return combined_rate_coeff
 
     def _calculate_j_nus(self):

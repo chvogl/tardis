@@ -177,7 +177,7 @@ class Radial1DModel(object):
             constants.c.cgs * self.tardis_config.supernova.time_explosion /
             (4 * np.pi * self.time_of_simulation *
              self.tardis_config.structure.volumes))
-        self.continuum_estimators['normalization_factor'] = \
+        self.photo_ion_norm_factor = \
             1. / (self.time_of_simulation * self.tardis_config.structure.volumes * constants.h.cgs.value)
 
 
@@ -231,11 +231,15 @@ class Radial1DModel(object):
             raise ValueError('radiative_rates_type type unknown - %s', radiative_rates_type)
 
     def update_plasmas(self, initialize_nlte=False):
+        self.normalize_continuum_estimators()
+        estimators = {}
+        if self.tardis_config.plasma['continuum_treatment'] == True:
+            estimators.update(self.continuum_estimators)
 
         self.plasma_array.update_radiationfield(
             self.t_rads.value, self.ws, self.j_blues,
             self.tardis_config.plasma.nlte, initialize_nlte=initialize_nlte,
-            n_e_convergence_threshold=0.05)
+            n_e_convergence_threshold=0.05, **estimators)
 
         if self.tardis_config.plasma.line_interaction_type in ('downbranch',
                                                                'macroatom'):
@@ -249,6 +253,11 @@ class Radial1DModel(object):
             self.atom_data.continuum_data.set_level_number_density(self.plasma_array.level_number_density)
 
             self.atom_data.continuum_data.set_level_number_density_ratio(self.plasma_array)
+
+    def normalize_continuum_estimators(self):
+        if self.continuum_estimators:
+            self.continuum_estimators['photo_ion_estimator'] *= self.photo_ion_norm_factor
+            self.continuum_estimators['stim_recomb_estimator'] *= self.photo_ion_norm_factor
 
     def save_spectra(self, fname):
         self.spectrum.to_ascii(fname)

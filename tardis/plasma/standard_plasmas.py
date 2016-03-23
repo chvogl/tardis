@@ -9,7 +9,7 @@ from tardis.plasma.properties.property_collections import (basic_inputs,
     macro_atom_properties, dilute_lte_excitation_properties,
     nebular_ionization_properties, non_nlte_properties,
     nlte_properties, helium_nlte_properties, helium_numerical_nlte_properties,
-    continuum_lte_properties)
+    continuum_lte_properties, continuum_inputs)
 from tardis.plasma.exceptions import PlasmaConfigError
 from tardis.plasma.properties import LevelBoltzmannFactorNLTE
 
@@ -27,7 +27,8 @@ class LTEPlasma(BasePlasma):
             t_rad=t_rad, abundance=abundance, atomic_data=atomic_data,
             density=density, time_explosion=time_explosion, j_blues=j_blues,
 	        w=None, link_t_rad_t_electron=link_t_rad_t_electron,
-            delta_input=delta_treatment, nlte_species=None)
+            delta_input=delta_treatment, nlte_species=None, photo_ion_estimator=None,
+            stim_recomb_estimator=None, photo_ion_statistics=None)
 
 class LegacyPlasmaArray(BasePlasma):
 
@@ -49,10 +50,13 @@ class LegacyPlasmaArray(BasePlasma):
 
     def update_radiationfield(self, t_rad, ws, j_blues, nlte_config,
         t_electrons=None, n_e_convergence_threshold=0.05,
-        initialize_nlte=False):
+        initialize_nlte=False, photo_ion_estimator=None,
+        stim_recomb_estimator=None, photo_ion_statistics=None):
         if nlte_config is not None and nlte_config.species:
             self.store_previous_properties()
-        self.update(t_rad=t_rad, w=ws, j_blues=j_blues)
+        self.update(t_rad=t_rad, w=ws, j_blues=j_blues,
+                    stim_recomb_estimator=stim_recomb_estimator, photo_ion_estimator=photo_ion_estimator,
+                    photo_ion_statistics=photo_ion_statistics)
 
     def __init__(self, number_densities, atomic_data, time_explosion,
         t_rad=None, delta_treatment=None, nlte_config=None,
@@ -129,9 +133,12 @@ class LegacyPlasmaArray(BasePlasma):
 
         if self.continuum_treatment:
             plasma_modules += continuum_lte_properties
+            plasma_modules += continuum_inputs
 
         super(LegacyPlasmaArray, self).__init__(
             plasma_properties=plasma_modules, t_rad=t_rad,
             abundance=abundance, density=density,
             atomic_data=atomic_data, time_explosion=time_explosion,
-            j_blues=None, w=w, link_t_rad_t_electron=link_t_rad_t_electron)
+            j_blues=None, w=w, link_t_rad_t_electron=link_t_rad_t_electron,
+            photo_ion_estimator=None, stim_recomb_estimator=None,
+            photo_ion_statistics=None)
