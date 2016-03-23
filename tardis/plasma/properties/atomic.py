@@ -11,7 +11,7 @@ from tardis.plasma.exceptions import IncompleteAtomicData
 logger = logging.getLogger(__name__)
 
 __all__ = ['Levels', 'Lines', 'LinesLowerLevelIndex', 'LinesUpperLevelIndex',
-           'AtomicMass', 'IonizationData', 'ZetaData', 'NLTEData']
+           'AtomicMass', 'IonizationData', 'ZetaData', 'NLTEData', 'ContinuumData']
 
 class Levels(BaseAtomicDataProperty):
     """
@@ -221,3 +221,24 @@ class NLTEData(ProcessingPlasmaProperty):
             return (getattr(self, self.outputs[0]),)
         else:
             return atomic_data.nlte_data
+
+class ContinuumData(BaseAtomicDataProperty):
+    """
+    Attributes
+    ----------
+    continuum_data : `tardis.continuum.base_continuum_data.ContinuumData`-object
+             Container object for continuum data.
+    photo_ion_cross_sections : Pandas DataFrame (nu, x_sect, index=['atomic_number',
+                                                'ion_number','level_number']), dtype float
+             Table of photoionization cross sections as a function of frequency.
+    photo_ion_index_sorted : Pandas MultiIndex (atomic_number, ion_number, level_number)
+             Index of levels sorted with respect to the threshold frequency of photoionization (decreasing).
+    """
+    outputs = ('continuum_data', 'photo_ion_cross_sections', 'photo_ion_index_sorted')
+    latex_name = ('\\omega_{\\textrm{i}}', '\\textrm{photo_ion_index_sorted}')
+
+    def _filter_atomic_property(self, continuum_data, selected_atoms):
+        return continuum_data
+
+    def _set_index(self, continuum_data):
+        return (continuum_data, continuum_data.photoionization_data, continuum_data.multi_index_nu_sorted)
