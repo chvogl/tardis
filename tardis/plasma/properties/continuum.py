@@ -48,6 +48,7 @@ class SpontRecombRateCoeff(ProcessingPlasmaProperty):
         for i in range(len(t_electrons)):
             tmp[i] = recomb_coeff.apply(lambda sub: trapz(sub[i], sub['nu']))
         alpha_sp = pd.DataFrame(tmp)
+        phi_lucy = phi_lucy.loc[alpha_sp.index]
         return alpha_sp.multiply(phi_lucy)
 
 class PhotoIonRateCoeff(ProcessingPlasmaProperty):
@@ -84,6 +85,7 @@ class StimRecombRateCoeff(ProcessingPlasmaProperty):
     def calculate(self, stim_recomb_estimator, photo_ion_index_sorted, phi_lucy):
         if stim_recomb_estimator is not None:
             alpha_stim = calculate_rate_coefficient_from_estimator(stim_recomb_estimator, photo_ion_index_sorted)
+            phi_lucy = phi_lucy.loc[alpha_stim.index]
             alpha_stim = alpha_stim.multiply(phi_lucy)
         else:
             alpha_stim = None
