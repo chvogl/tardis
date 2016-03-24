@@ -2,7 +2,7 @@ from tardis.plasma.properties.base import (Input, ArrayInput, DataFrameInput)
 
 __all__ = ['PhotoIonRateEstimator', 'StimRecombRateEstimator', 'PhotoIonRateStatistics']
 
-class PhotoIonRateEstimator(DataFrameInput):
+class PhotoIonRateEstimator(Input):
     """
     Attributes
     ----------
@@ -12,7 +12,7 @@ class PhotoIonRateEstimator(DataFrameInput):
     outputs = ('photo_ion_estimator',)
     latex_name = ('\\gamma_{\\textrm{estimator}}',)
 
-class PhotoIonRateStatistics(DataFrameInput):
+class PhotoIonRateStatistics(Input):
     """
     Attributes
     ----------
@@ -22,7 +22,7 @@ class PhotoIonRateStatistics(DataFrameInput):
     outputs = ('photo_ion_statistics',)
     latex_name = ('\\N_{\\textrm{bf_estimator}}',)
 
-class StimRecombRateEstimator(DataFrameInput):
+class StimRecombRateEstimator(Input):
     """
     Attributes
     ----------

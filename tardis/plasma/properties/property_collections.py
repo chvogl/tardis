@@ -23,7 +23,8 @@ continuum_inputs = PlasmaPropertyCollection([StimRecombRateEstimator, PhotoIonRa
 continuum_lte_properties = PlasmaPropertyCollection([
     PhiSahaLTECont, LTEIonNumberDensity, LevelBoltzmannFactorLTECont, LTEPartitionFunction, LTELevelNumberDensity,
     PhiSahaElectrons, GElectronTe, LevelBoltzmannFactorLTETe, LTEPartitionFunctionTe, PhiLucy])
-continuum_interaction_properties = PlasmaPropertyCollection([SpontRecombRateCoeff])
+continuum_interaction_properties = PlasmaPropertyCollection([
+    SpontRecombRateCoeff, StimRecombRateCoeff,PhotoIonRateCoeff])
 dilute_lte_excitation_properties = PlasmaPropertyCollection([
     LevelBoltzmannFactorDiluteLTE])
 non_nlte_properties = PlasmaPropertyCollection([LevelBoltzmannFactorNoNLTE])
