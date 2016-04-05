@@ -10,8 +10,9 @@ basic_inputs = PlasmaPropertyCollection([TRadiative, Abundance, Density,
 basic_properties = PlasmaPropertyCollection([BetaRadiation,
     Levels, Lines, AtomicMass, PartitionFunction,
     GElectron, IonizationData, NumberDensity, LinesLowerLevelIndex,
-    LinesUpperLevelIndex, TauSobolev, LevelNumberDensity, IonNumberDensity,
+    LinesUpperLevelIndex, TauSobolev, LevelNumberDensity,
     StimulatedEmissionFactor, SelectedAtoms, ElectronTemperature])
+non_nlte_ionzation_properties = PlasmaPropertyCollection([IonNumberDensity])
 lte_ionization_properties = PlasmaPropertyCollection([PhiSahaLTE])
 lte_excitation_properties = PlasmaPropertyCollection([LevelBoltzmannFactorLTE])
 macro_atom_properties = PlasmaPropertyCollection([BetaSobolev,
@@ -25,6 +26,7 @@ continuum_lte_properties = PlasmaPropertyCollection([
     PhiSahaElectrons, GElectronTe, LevelBoltzmannFactorLTETe, LTEPartitionFunctionTe, PhiLucy])
 continuum_interaction_properties = PlasmaPropertyCollection([
     SpontRecombRateCoeff, StimRecombRateCoeff,PhotoIonRateCoeff])
+nlte_ionizaton_properties = PlasmaPropertyCollection([NLTEIonNumberDensity])
 dilute_lte_excitation_properties = PlasmaPropertyCollection([
     LevelBoltzmannFactorDiluteLTE])
 non_nlte_properties = PlasmaPropertyCollection([LevelBoltzmannFactorNoNLTE])

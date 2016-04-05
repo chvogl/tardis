@@ -6,7 +6,9 @@ import pandas as pd
 import numexpr as ne
 
 from scipy import interpolate
+from scipy.optimize import root
 
+from tardis.continuum.util import *
 
 
 from tardis.plasma.properties.base import ProcessingPlasmaProperty
@@ -16,7 +18,7 @@ from tardis.plasma.exceptions import PlasmaIonizationError
 logger = logging.getLogger(__name__)
 
 __all__ = ['PhiSahaNebular', 'PhiSahaLTE', 'PhiSahaLTECont', 'RadiationFieldCorrection',
-           'IonNumberDensity', 'LTEIonNumberDensity', 'PhiSahaElectrons']
+           'IonNumberDensity', 'LTEIonNumberDensity', 'PhiSahaElectrons', 'NLTEIonNumberDensity']
 
 
 def calculate_block_ids_from_dataframe(dataframe):
@@ -283,3 +285,205 @@ class LTEIonNumberDensity(IonNumberDensity):
     def calculate(self, phi_lte, partition_function, number_density, electron_densities):
         return self.calculate_with_n_electron(
             phi_lte, partition_function, number_density, electron_densities)
+
+class NLTEIonNumberDensity(ProcessingPlasmaProperty):
+    outputs = ('ion_number_density', 'electron_densities')
+    latex_name = ('N_{i,j}','n_{e}',)
+
+    def calculate(self, phi, alpha_stim, alpha_sp, gamma, number_density, level_boltzmann_factor, partition_function):
+        ion_number_densities = pd.DataFrame(index=partition_function.index, columns=[])
+        electron_densities = np.zeros(partition_function.shape[1], dtype=float)
+        alpha_tot = gamma_tot = None
+
+        number_density_vectors, number_density_vectors_neutral\
+            = self._setup_number_density_vectors(number_density, partition_function.index)
+        charge_conservation_vector = self._get_charge_conservation_vector(partition_function.index)
+        phi_prep = self._prepare_phi(phi, partition_function.index)
+        number_conservation_index = self._get_number_conservation_index(partition_function.index)
+        if gamma is not None:
+            level_pop_fractions = self._calculate_level_pop_fractions(level_boltzmann_factor, partition_function)
+            alpha_tot = self._calculate_alpha_tot(alpha_stim, alpha_sp, partition_function.index)
+            gamma_tot = self._calculate_tot_ion_rate(gamma, level_pop_fractions, partition_function.index)
+        for i in range(partition_function.shape[1]):
+            initial_guesses = self._generate_initial_guesses(
+                number_density_vectors, number_density_vectors_neutral, shell=i)
+            for initial_guess in initial_guesses:
+                func, jac = self._get_functions(charge_conservation_vector, number_density_vectors,
+                                            number_conservation_index, phi_prep, alpha_tot, gamma_tot, shell=i)
+                sol = root(fun=func, x0=initial_guess, jac=jac, options={'xtol':1e-10})
+                ion_number_density = pd.Series(sol.x[:-1], index=partition_function.index)
+
+                ion_number_density = self._prepare_ion_densities(ion_number_density)
+                success_number_conservation = self._check_number_conservation(ion_number_density, number_density[i])
+                success = sol.success and success_number_conservation
+                if success:
+                    break
+
+            else:
+                raise PlasmaIonizationError
+
+            ion_number_densities[i] = ion_number_density
+            electron_densities[i] = sol.x[-1]
+
+        return ion_number_densities, pd.Series(electron_densities)
+
+    @staticmethod
+    def _prepare_ion_densities(ion_number_density):
+        negative_elements = ion_number_density < 0.0
+        ion_number_density[negative_elements] = 0.
+
+        ion_zero_threshold = 1e-20
+        ion_number_density[ion_number_density < ion_zero_threshold] = 0.0
+        return ion_number_density
+
+    @staticmethod
+    def _check_number_conservation(ion_number_density, number_density, rtol=1e-5):
+        number_density_from_ions = ion_number_density.groupby(level=0).sum()
+        rdiff = np.fabs(number_density_from_ions - number_density).divide(number_density)
+        return (rdiff < rtol).all()
+
+    def _get_functions(self, charge_conservation_vector, number_density_vectors, number_conservation_index, phi_prep,
+                       alpha_tot, gamma_tot, shell):
+        lte_diag = -np.hstack([phi_prep[shell].values, np.zeros(1)])
+        lte_offdiag = (lte_diag != 0).astype(float)[:-1]
+        number_density = np.hstack([number_density_vectors[shell], np.zeros(1)])
+        if alpha_tot is not None:
+            alpha_matrix = self._setup_recomb_rate_matrix(alpha_tot[shell].values)
+            gamma_matrix = self._setup_ion_rate_matrix(gamma_tot[shell].values)
+
+            nlte_mask = (alpha_matrix + gamma_matrix) !=0
+
+        def setup_rate_matrix(x):
+            electron_density = x[-1]
+            rate_matrix = np.diag(lte_diag) + np.diag(lte_offdiag, k=1) * electron_density
+            if alpha_tot is not None:
+                rate_matrix[nlte_mask] = 0.0
+                rate_matrix += alpha_matrix * electron_density + gamma_matrix
+            rate_matrix[number_conservation_index] = 1.
+            rate_matrix[-1] = charge_conservation_vector
+            return rate_matrix
+
+        def func(x):
+            rate_matrix = setup_rate_matrix(x)
+            return np.dot(rate_matrix, x) - number_density
+
+        def jac(x):
+            rate_matrix = setup_rate_matrix(x)
+
+            derivative_matrix = np.diag(lte_offdiag, k=1)
+            if alpha_tot is not None:
+                derivative_matrix[nlte_mask] = 0.0
+                derivative_matrix += alpha_matrix
+                derivative_matrix[number_conservation_index] = 0.0
+            derivative_by_electron_density = np.dot(derivative_matrix, x)[:-1]
+            rate_matrix[:-1,-1] = derivative_by_electron_density
+            return rate_matrix
+
+        return func, jac
+
+    @staticmethod
+    def _setup_recomb_rate_matrix(recomb_rate):
+        offdiag = recomb_rate
+        diag = np.hstack([np.zeros(1), -recomb_rate])
+        return np.diag(diag) + np.diag(offdiag, k=1)
+
+    @staticmethod
+    def _setup_ion_rate_matrix(ion_rate):
+        offdiag = ion_rate
+        diag = np.hstack([-ion_rate, np.zeros(1)])
+        return np.diag(diag) + np.diag(offdiag, k=-1)
+
+    @staticmethod
+    def _prepare_phi(phi, ion_index):
+        # Zero phi values pose a problem for the root finding algorithm. Set them to a small value.
+        phi[phi == 0.0] = 1.e-10 * phi[phi > 0.0].min().min()
+
+        atomic_number = phi.index.get_level_values(0).values
+        ion_number = phi.index.get_level_values(1).values
+        new_index = pd.MultiIndex.from_arrays([atomic_number, ion_number - 1])
+        phi_prep = phi.set_index(new_index).reindex(ion_index).fillna(0)
+        return phi_prep
+
+    @staticmethod
+    def _get_number_conservation_index(ion_index):
+        atomic_number = np.unique(ion_index.get_level_values(0).values.astype(int))
+        sum = (atomic_number + 1).cumsum() - 1
+        index1 = np.concatenate([np.ones(j+1, dtype=int) * i for i,j in zip(sum, atomic_number)])
+        index2 = np.arange(len(ion_index), dtype=int)
+        return (index1, index2)
+
+    @staticmethod
+    def _setup_number_density_vectors(number_density, ion_index):
+        atomic_number = number_density.index.values
+        tmp_index = pd.MultiIndex.from_arrays([atomic_number, atomic_number])
+        tmp_index_neutral = pd.MultiIndex.from_arrays([atomic_number, np.zeros_like(atomic_number)])
+
+        number_density_vectors = (number_density.set_index(tmp_index)).reindex(ion_index).fillna(0)
+        number_density_neutral_vectors = (number_density.set_index(tmp_index_neutral)).reindex(ion_index).fillna(0)
+        return number_density_vectors, number_density_neutral_vectors
+
+    @staticmethod
+    def _get_charge_conservation_vector(ion_index):
+        ion_charge = ion_index.get_level_values(1)
+        return np.hstack([ion_charge, np.array([-1.])])
+
+    @staticmethod
+    def _generate_initial_guesses(number_conservation_vectors, number_density_neutral, shell):
+        # First guess: Everything is ionized.
+        ion_number = number_conservation_vectors.index.get_level_values(1).values
+        initial_ion_density = number_conservation_vectors[shell].values
+        initial_electron_density = (ion_number * initial_ion_density).sum()
+        yield np.hstack([initial_ion_density, np.array(initial_electron_density)])
+
+        # Second guess: Everything is neutral. A small amount of free electrons is added.
+        logger.warn('Calculation did not succeed with first guess (=everything ionized)')
+        neutral = number_density_neutral[shell].values
+        yield np.hstack([neutral, np.ones(1) * neutral.sum()*1.e-5 ])
+
+        # Third guess: Every ionization stage within an ion has the same number density.
+        logger.warn('Calculation did not succeed with second guess (=everything neutral)')
+        ion_guess = []
+        for name, group in number_density_neutral[shell].groupby(level=[0]):
+            count = len(group)
+            total_density = group[0]
+            ion_guess.append(np.ones(count) * total_density/count)
+        ion_guess = np.hstack(ion_guess)
+        ion_number = number_density_neutral.index.get_level_values(1).values
+        electron_density = (ion_guess * ion_number).sum()
+        yield np.hstack([ion_guess, np.array(electron_density)])
+
+    def _calculate_level_pop_fractions(self, level_boltzmann_factor, partition_function):
+        boltzmann_factor = self._prepare_boltzmann_factor(level_boltzmann_factor)
+        partition_function_index = get_ion_multi_index(boltzmann_factor.index, next_higher=False)
+        partition_function = partition_function.loc[partition_function_index].values
+        return boltzmann_factor.divide(partition_function)
+
+    @staticmethod
+    def _prepare_boltzmann_factor(boltzmann_factor):
+        atomic_number = boltzmann_factor.index.get_level_values(0)
+        ion_number = boltzmann_factor.index.get_level_values(1)
+        selected_ions_mask = (atomic_number != ion_number)
+        return boltzmann_factor[selected_ions_mask]
+
+    @staticmethod
+    def _calculate_alpha_tot(alpha_stim, alpha_sp, index):
+        alpha_tot = (alpha_sp + alpha_stim).groupby(level=[0,1]).sum()
+        return alpha_tot.reindex(index).fillna(0)
+
+    @staticmethod
+    def _calculate_tot_ion_rate(rate, level_population_fractions, index):
+        total_rate = rate.multiply(level_population_fractions.loc[rate.index]).groupby(level=[0,1]).sum()
+        return total_rate.reindex(index).fillna(0)
+
+    # Not used atm. Intended as input for 'diag'-option of 'hybr' root finding method.
+    @staticmethod
+    def _get_scale_factors(number_density_vectors, shell):
+        counts = number_density_vectors[0].groupby(level=0).count().values
+        number_density = number_density_vectors.groupby(level=0).max()[shell].values
+        scale_factor = []
+        for i, count in enumerate(counts):
+            scale_factor.append(np.ones(count, dtype=float) * number_density[i])
+        scale_factor.append(np.array(number_density.sum()))
+        scale_factor = np.hstack(scale_factor)
+        scale_factor /= scale_factor.max()
+        return 1./scale_factor

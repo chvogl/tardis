@@ -9,7 +9,8 @@ from tardis.plasma.properties.property_collections import (basic_inputs,
     macro_atom_properties, dilute_lte_excitation_properties,
     nebular_ionization_properties, non_nlte_properties,
     nlte_properties, helium_nlte_properties, helium_numerical_nlte_properties,
-    continuum_lte_properties, continuum_inputs, continuum_interaction_properties)
+    continuum_lte_properties, continuum_inputs, continuum_interaction_properties,
+    nlte_ionizaton_properties, non_nlte_ionzation_properties)
 from tardis.plasma.exceptions import PlasmaConfigError
 from tardis.plasma.properties import LevelBoltzmannFactorNLTE
 
@@ -75,10 +76,21 @@ class LegacyPlasmaArray(BasePlasma):
             raise NotImplementedError('Sorry {0} not implemented yet.'.format(
             excitation_mode))
 
+        self.continuum_treatment = continuum_treatment
+
         if ionization_mode == 'lte':
             plasma_modules += lte_ionization_properties
+            plasma_modules += non_nlte_ionzation_properties
         elif ionization_mode == 'nebular':
             plasma_modules += nebular_ionization_properties
+            plasma_modules += non_nlte_ionzation_properties
+        elif ionization_mode == 'nlte':
+            plasma_modules += nebular_ionization_properties
+            if not self.continuum_treatment:
+                raise PlasmaConfigError('NLTE-Ionization requires continuum interactions.'
+                                        'Set "continuum_treatment: True" in config.')
+            plasma_modules += nlte_ionizaton_properties
+
         else:
             raise NotImplementedError('Sorry ' + ionization_mode +
                 ' not implemented yet.')
@@ -128,8 +140,6 @@ class LegacyPlasmaArray(BasePlasma):
                 self.v_outer = v_outer
 
         self.delta_treatment = delta_treatment
-
-        self.continuum_treatment = continuum_treatment
 
         if self.continuum_treatment:
             plasma_modules += continuum_lte_properties

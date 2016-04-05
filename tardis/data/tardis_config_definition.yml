@@ -72,7 +72,7 @@ plasma:
         property_type: string
         mandatory: True
         default: None
-        allowed_value: nebular lte
+        allowed_value: nebular lte nlte
         help: ionization treatment mode
           
       

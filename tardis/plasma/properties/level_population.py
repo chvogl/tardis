@@ -4,7 +4,7 @@ import numpy as np
 
 from tardis.plasma.properties.base import ProcessingPlasmaProperty
 
-from tardis.continuum.util import get_ion_multi_index
+from tardis.continuum.util import *
 
 logger = logging.getLogger(__name__)
 
